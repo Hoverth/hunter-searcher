@@ -3,6 +3,7 @@ use log::{debug, info};
 mod crawler;
 mod lexer; 
 mod index;
+mod db;
 
 use crate::crawler::CrawlerBuilder;
 use crate::index::process_index;
