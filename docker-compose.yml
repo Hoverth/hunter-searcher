@@ -10,13 +10,12 @@ services:
   hunter-searcher:
     build: .
     container_name: hunter-searcher
-    command: hunter-searcher
-    expose:
-      - '22001:22001'
+    ports:
+      - "22001:22001"
     depends_on:
       - db
     env_file:
-        - ./.env
+      - ./.env
 
 volumes:
   postgres_data:
