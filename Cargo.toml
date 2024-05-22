@@ -12,3 +12,5 @@ texting_robots = "0.2"
 env_logger = "0.11.3"
 log = "0.4.21"
 sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-native-tls", "postgres" ] }
+axum = "0.7.5"
+serde = "1.0.202"

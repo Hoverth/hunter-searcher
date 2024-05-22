@@ -4,15 +4,19 @@ mod crawler;
 mod lexer; 
 mod index;
 mod db;
+mod app;
 
 use crate::crawler::CrawlerBuilder;
 use crate::index::process_index;
+use crate::app::serve;
 
 #[tokio::main]
 async fn main() {
     env_logger::init();
 
-    info!("Started crawler!");
+    let _ = serve().await;
+
+    /*info!("Started crawler!");
 
     let mut crawler = CrawlerBuilder::new("hunter-searcher crawler/v0.1.0")
                                     .max_depth(1)
@@ -22,5 +26,5 @@ async fn main() {
 
     let addition_to_index = crawler.crawl("https://example.com").await;
 
-    process_index(addition_to_index);
+    process_index(addition_to_index);*/
 }
