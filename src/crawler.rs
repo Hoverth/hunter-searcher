@@ -9,22 +9,39 @@ use log::{debug, info};
 use crate::lexer::Lexer;
 use crate::index::IndexEntry;
 
+/// Crawler - A simple web crawler class implementation
 #[derive(Clone,Debug)]
 pub struct Crawler {
-    user_agent: String,
+    /// The crawler's user-agent
+    user_agent: String, 
+    /// The reqwest client, for more efficient requesting
     client: Client,
+    /// The store of `robots.txt` records, cached for efficient retrieval
     robot_records: HashMap<String, String>,
+    /// A vector containing the domains of the websites the crawler has scraped
     websites: Vec<String>,
+    /// The max amount of documents to get
     max_depth: i32,
+    /// Whether the whitelist is enabled or not
     whitelist_en: bool,
+    /// The whitelist contains domains or other patterns that the crawler will check that a
+    /// document **must** have in it's URL
     whitelist: Vec<String>,
+    /// Whether the blacklist is enabled or not
     blacklist_en: bool,
+    /// The blacklist contains domains or other strings that the crawler will check that a
+    /// document **must not** have in it's URL 
+    ///
+    /// **This overrides the blacklist** 
     blacklist: Vec<String>,
+    /// The time between requests
     delay_time: Duration,
+    /// The in-memory index of all the documents gotten this crawl
     index: Vec<IndexEntry>,
 }
 
 impl Crawler {
+    /// Crawl from a seed URL
     pub async fn crawl(&mut self, seed_url: &str) -> Vec<IndexEntry> {
         let mut to_get_links: VecDeque<String> = VecDeque::new();
         let mut latest_index;
@@ -86,6 +103,7 @@ impl Crawler {
         self.index.clone()
     }
     
+    /// Index a single URL
     pub async fn index_url(&self, url: &str) -> IndexEntry {
         info!("Indexing {url}...");
         let resp = self.request_body(url).await.expect("error making request");
@@ -139,6 +157,9 @@ impl Crawler {
 
         //TODO: do we bother with stopwords and lemmatisation?
         
+        let content: String = text.to_string(); // we should trim whitespace and extract blurb here
+        let blurb: String = String::new();
+
         debug!("Collecting links...");
         for a in dom.query_selector("a[href]").unwrap(){
             let mut href = a.get(parser)
@@ -173,10 +194,18 @@ impl Crawler {
             }
         }
     
-        IndexEntry{ url: url.to_string(), links: page_urls, number_js: 0, tf }
+        IndexEntry{ 
+            url: url.to_string(), 
+            links: page_urls, 
+            number_js: 0, 
+            tf,
+            content,
+            blurb,
+        }
     }
     
-    async fn request_body(&self, url: &str) -> Option<String> {
+    /// Returns the body of a request as a string
+    pub async fn request_body(&self, url: &str) -> Option<String> {
         let mut body: Option<String> = None;
         let resp = self.client.execute(
                 self.client.get(url).build().expect("failed to build request!")
@@ -191,12 +220,14 @@ impl Crawler {
         body
     }
 
+    /// Simple utility function that pushes a value if it's not already in the vector
     fn push_dedup(vec: &mut Vec<String>, thing: String) {
         if !vec.contains(&thing) {
             vec.push(thing);
         }
     }
     
+    /// Helper function to resolve a relative HREF from a document's URL
     fn resolve_relative_url(url: &str, href: String) -> String {
         Url::parse(url).expect("can't parse url")
                        .join(href.as_str()).expect("can't join relative path!")
@@ -204,11 +235,14 @@ impl Crawler {
     }
 }
 
+/// CrawlerBuilder - a builder for the Crawler class
 pub struct CrawlerBuilder {
+    /// The in-construction Crawler instance
     crawler: Crawler
 }
 
 impl CrawlerBuilder {
+    /// Create a CrawlerBuilder with the specified user agent
     pub fn new (user_agent: &str) -> CrawlerBuilder {
         CrawlerBuilder {
             crawler: Crawler {
@@ -228,28 +262,35 @@ impl CrawlerBuilder {
         }
     }
 
+    /// Add a whitelist to the Crawler
     pub fn add_whitelist(mut self, whitelist: Vec<String>) -> CrawlerBuilder {
         self.crawler.whitelist_en = true;
         self.crawler.whitelist = whitelist.to_owned();
         self
     }
     
+    /// Add a blacklist to the Crawler
     pub fn add_blacklist(mut self, blacklist: Vec<String>) -> CrawlerBuilder {
         self.crawler.blacklist_en = true;
         self.crawler.blacklist = blacklist.to_owned();
         self
     }
     
+    /// Adjust the default (1s) minimum delay between requests
     pub fn delay_time(mut self, duration: Duration) -> CrawlerBuilder {
         self.crawler.delay_time = duration;
         self
     }
 
+    /// Adjust the maximum max depth of the crawl
+    ///
+    /// By default this is -1, which means no limit
     pub fn max_depth(mut self, depth: i32) -> CrawlerBuilder {
         self.crawler.max_depth = depth;
         self
     }
 
+    /// Build the Crawler from the CrawlerBuilder
     pub fn build(&self) -> Crawler {
         self.crawler.clone()
     }
