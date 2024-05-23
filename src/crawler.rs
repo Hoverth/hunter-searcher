@@ -8,6 +8,7 @@ use log::{debug, info};
 
 use crate::lexer::Lexer;
 use crate::index::IndexEntry;
+use crate::db::DB;
 
 /// Crawler - A simple web crawler class implementation
 #[derive(Clone,Debug)]
@@ -42,7 +43,7 @@ pub struct Crawler {
 
 impl Crawler {
     /// Crawl from a seed URL
-    pub async fn crawl(&mut self, seed_url: &str) -> Vec<IndexEntry> {
+    pub async fn crawl(&mut self, db: &DB, seed_url: &str) -> Vec<IndexEntry> {
         let mut to_get_links: VecDeque<String> = VecDeque::new();
         let mut latest_index;
         to_get_links.push_back(seed_url.to_string());
@@ -96,6 +97,9 @@ impl Crawler {
             }
 
             println!("Getting \"{:<60}\" ({:_>6} left, {:_>6} total sites)", latest_index.as_ref().expect("no latest index!").url, to_get_links.len(), self.websites.len());
+
+            let i = latest_index.clone().unwrap();
+            db.add_webpage(i.title, i.url, String::from("blurb"), i.content, i.number_js.try_into().expect("Failed to convert!"), String::from("")).await;
 
             self.index.push(latest_index.unwrap())
         }

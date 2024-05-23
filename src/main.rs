@@ -7,12 +7,14 @@ mod db;
 mod app;
 
 use crate::crawler::CrawlerBuilder;
-use crate::index::process_index;
 use crate::app::serve;
+use crate::db::DB;
 
 #[tokio::main]
 async fn main() {
     env_logger::init();
+    
+    let db = DB::new("archive", "archive", "localhost:5433", "archive_db").await;
 
     info!("Started crawler!");
 
@@ -22,9 +24,7 @@ async fn main() {
     
     debug!("Created Crawler from builder");
 
-    let addition_to_index = crawler.crawl("https://example.com").await;
+    let _ = crawler.crawl(&db, "https://example.com").await;
 
-    process_index(addition_to_index).await;
-
-    serve().await;
+    serve(db).await;
 }

@@ -15,10 +15,10 @@ struct AppState {
     db: DB
 }
 
-pub async fn serve() {
+pub async fn serve(db: DB) {
     info!("Starting server...");
     
-    let shared_state = Arc::new(AppState{db: DB::new("archive", "archive", "localhost:5433", "archive_db").await});
+    let shared_state = Arc::new(AppState{db});
 
     let app = Router::new()
         .route("/", get(homepage))
