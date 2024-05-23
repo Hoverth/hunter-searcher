@@ -114,6 +114,7 @@ impl Crawler {
         let parser = dom.parser();
 
         // TODO add decoding escaped html characters
+        let mut title: String = String::new();
 
         debug!("Constructing text...");
         let mut text: String = String::new();
@@ -124,6 +125,9 @@ impl Crawler {
                                             .unwrap().inner_text(parser);
                     text += &text_portion;
                     text += " ";
+                    if tag.contains("title") {
+                        title = text_portion.to_string();
+                    }
                 } else {
                     let img = child.get(parser).unwrap();
                     let text_portion = match img.as_tag() {
@@ -197,6 +201,7 @@ impl Crawler {
         IndexEntry{ 
             url: url.to_string(), 
             links: page_urls, 
+            title,
             number_js: 0, 
             tf,
             content,

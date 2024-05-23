@@ -3,6 +3,8 @@ version: '3'
 services:
   db:
     image: postgres
+    ports: 
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data 
     env_file:
@@ -11,7 +13,7 @@ services:
     build: .
     container_name: hunter-searcher
     ports:
-      - "22001:22001"
+      - "22002:22001"
     depends_on:
       - db
     env_file:
