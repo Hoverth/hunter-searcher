@@ -7,8 +7,26 @@ use tokio::time::sleep;
 use log::{debug, info};
 
 use crate::lexer::Lexer;
-use crate::index::IndexEntry;
 use crate::db::DB;
+ 
+/// Index Entry - A index entry format struct
+#[derive(Clone,Debug)]
+pub struct IndexEntry {
+    /// The URL of the document
+    pub url: String, 
+    /// The number of Javascript scripts in the document
+    pub number_js: usize, 
+    /// The title of the page
+    pub title: String,
+    /// The links in the document
+    pub links: Vec<String>, 
+    /// The term frequency table for the document
+    pub tf: HashMap<String, usize>, 
+    /// The text content of the document
+    pub content: String, 
+    /// A small blurb for the document
+    pub blurb: String, 
+}
 
 /// Crawler - A simple web crawler class implementation
 #[derive(Clone,Debug)]

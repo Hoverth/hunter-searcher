@@ -2,7 +2,6 @@ use log::{debug, info};
 
 mod crawler;
 mod lexer; 
-mod index;
 mod db;
 mod app;
 
