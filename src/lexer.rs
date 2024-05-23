@@ -32,16 +32,14 @@ impl<'a> Lexer<'a> {
         }
         
         // urls
-        if self.content[0] == 'h' && self.content.len() > 8 {
-            if self.content[0..3] == "http".chars().collect::<Vec<char>>()[..] {
-                debug!("Found URL...");
-
-                let mut n = 1;
-                while n < self.content.len() && !self.content[n].is_whitespace() {
-                    n += 1;
-                }
-                return Some(self.chop(n));
+        if self.content[0] == 'h' && self.content.len() > 8 && self.content[0..3] == "http".chars().collect::<Vec<char>>()[..] {
+            debug!("Found URL...");
+ 
+            let mut n = 1;
+            while n < self.content.len() && !self.content[n].is_whitespace() {
+                n += 1;
             }
+            return Some(self.chop(n));
         }
 
         // words

@@ -1,12 +1,10 @@
 use axum::{
     extract::{self, State},
     response::IntoResponse,
-    routing::{get, post},
-    serve::Serve,
+    routing::get,
     http::{header, StatusCode},
     Json, Router,
 };
-use serde::{Deserialize, Serialize};
 use log::info;
 use std::sync::Arc;
 use std::collections::HashMap;

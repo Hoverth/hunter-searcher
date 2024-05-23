@@ -118,9 +118,9 @@ impl Crawler {
 
         debug!("Constructing text...");
         let mut text: String = String::new();
-        for tag in vec!["body", "title", "img[alt]"] {
+        for tag in ["body", "title", "img[alt]"] {
             for child in dom.query_selector(tag).unwrap() {
-                if !tag.contains("[") {
+                if !tag.contains('[') {
                     let text_portion = child.get(parser)
                                             .unwrap().inner_text(parser);
                     text += &text_portion;
@@ -246,6 +246,7 @@ pub struct CrawlerBuilder {
     crawler: Crawler
 }
 
+#[allow(dead_code)]
 impl CrawlerBuilder {
     /// Create a CrawlerBuilder with the specified user agent
     pub fn new (user_agent: &str) -> CrawlerBuilder {
