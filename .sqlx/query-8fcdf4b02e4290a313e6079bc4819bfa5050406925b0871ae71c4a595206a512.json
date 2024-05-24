@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "CREATE INDEX IF NOT EXISTS ix_search_vector ON webpages USING GIN (search_vector);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "8fcdf4b02e4290a313e6079bc4819bfa5050406925b0871ae71c4a595206a512"
+}

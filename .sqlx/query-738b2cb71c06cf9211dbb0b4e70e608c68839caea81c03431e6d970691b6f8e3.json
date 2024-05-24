@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DROP TRIGGER IF EXISTS webpage_search_vector_update ON webpages;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "738b2cb71c06cf9211dbb0b4e70e608c68839caea81c03431e6d970691b6f8e3"
+}

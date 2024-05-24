@@ -1,4 +1,5 @@
 use log::{debug, info};
+use std::env;
 
 mod crawler;
 mod db;
@@ -12,7 +13,12 @@ use crate::db::DB;
 async fn main() {
     env_logger::init();
     
-    let db = DB::new("archive", "archive", "localhost:5433", "archive_db").await;
+    let db = DB::new(
+        &env::var("POSTGRES_USER").expect("No POSTGRES_USER env var set!"), 
+        &env::var("POSTGRES_PASSWORD").expect("No POSTGRES_PASSWORD env var set!"), 
+        &env::var("POSTGRES_HOST").expect("No POSTGRES_HOST env var set!"), 
+        &env::var("POSTGRES_DB").expect("No POSTGRES_DB env var set!")
+        ).await;
 
     info!("Started crawler!");
 

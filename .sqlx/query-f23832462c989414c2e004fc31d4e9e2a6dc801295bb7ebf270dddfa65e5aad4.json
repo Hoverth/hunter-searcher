@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                CREATE TRIGGER webpage_search_vector_update\n                BEFORE INSERT OR UPDATE\n                ON webpages\n                FOR EACH ROW EXECUTE PROCEDURE update_webpage_content();",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "f23832462c989414c2e004fc31d4e9e2a6dc801295bb7ebf270dddfa65e5aad4"
+}

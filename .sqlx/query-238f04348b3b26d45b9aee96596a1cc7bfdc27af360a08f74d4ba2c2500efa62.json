@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        CREATE TABLE IF NOT EXISTS webpages (\n            id serial PRIMARY KEY,\n            title TEXT NOT NULL,\n            blurb TEXT,\n            content TEXT NOT NULL,\n            number_js INTEGER NOT NULL,\n            url TEXT NOT NULL,\n            search_vector tsvector\n        );",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "238f04348b3b26d45b9aee96596a1cc7bfdc27af360a08f74d4ba2c2500efa62"
+}

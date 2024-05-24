@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": " \n                SELECT title, url, blurb, number_js, rank\n                FROM (select title, url, blurb, number_js, ts_rank(search_vector, websearch_to_tsquery($1)) as rank from webpages)\n                Where rank > 0.1\n                ORDER BY rank DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "blurb",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "number_js",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "rank",
+        "type_info": "Float4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "2b0abb1a1f77e953c89637a421eddcd09db358031e9353921e972791c77fb737"
+}
