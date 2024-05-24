@@ -103,7 +103,7 @@ impl Crawler {
 
             Self::push_dedup(&mut self.websites, url_host);
             
-            latest_index = Some(self.index_url(url.as_str()).await);
+            latest_index = self.index_url(url.as_str()).await;
         
             for link in &latest_index.as_ref().expect("no latest index!").links {
                 if !to_get_links.contains(link) {
@@ -123,9 +123,12 @@ impl Crawler {
     }
     
     /// Index a single URL
-    pub async fn index_url(&self, url: &str) -> IndexEntry {
+    pub async fn index_url(&self, url: &str) -> Option<IndexEntry> {
         info!("Indexing {url}...");
-        let resp = self.request_body(url).await.expect("error making request");
+        let resp = match self.request_body(url).await {
+            Some(resp) => resp,
+            None => { return None; }
+        };
 
         let mut page_urls: Vec<String> = Vec::new();
     
@@ -176,10 +179,14 @@ impl Crawler {
         let text: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
         debug!("{text}");
         
+        let words = text.split_whitespace().collect::<Vec<_>>();
+        
         let content: String = text.to_string(); // we should trim whitespace and extract blurb here
-        let blurb: String = content.split_whitespace()
-                                   .collect::<Vec<_>>()[10..30]
-                                   .join(" ");
+    
+        // not ideal TODO: make this better
+        let mut blurb: String = String::new();
+        if words.len() < 30 { blurb = words[5..].join(" "); }
+        else { blurb = words[10..30].join(" "); }
 
         debug!("Collecting links...");
         for a in dom.query_selector("a[href]").unwrap(){
@@ -215,14 +222,14 @@ impl Crawler {
             }
         }
     
-        IndexEntry{ 
+        Some(IndexEntry{ 
             url: url.to_string(), 
             links: page_urls, 
             title,
             number_js, 
             content,
             blurb,
-        }
+        })
     }
     
     /// Returns the body of a request as a string
@@ -269,6 +276,7 @@ impl CrawlerBuilder {
         CrawlerBuilder {
             crawler: Crawler {
                 user_agent: user_agent.to_string(),
+                //TODO: only accept html
                 client: Client::builder().user_agent(user_agent)
                                .build().unwrap(), 
                 robot_records: HashMap::new(),
