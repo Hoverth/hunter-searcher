@@ -140,12 +140,16 @@ impl Crawler {
         for tag in ["body", "title", "img[alt]"] {
             for child in dom.query_selector(tag).unwrap() {
                 if !tag.contains('[') {
-                    let text_portion = child.get(parser)
-                                            .unwrap().inner_text(parser);
-                    text += &text_portion;
+                    let child = child.get(parser).unwrap();
+                    text += &child.inner_text(parser);
                     text += " ";
+
+                    for sub in child.as_tag().unwrap().query_selector(parser, "script").unwrap() {
+                        text = text.replace(&sub.get(parser).unwrap().inner_text(parser).into_owned(), "");
+                    }
+
                     if tag.contains("title") {
-                        title = text_portion.to_string();
+                        title = child.inner_text(parser).to_string();
                     }
                 } else {
                     let img = child.get(parser).unwrap();

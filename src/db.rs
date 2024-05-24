@@ -1,7 +1,7 @@
 use serde::Serialize;
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
-use log::warn;
+use log::{warn, info, debug};
 
 /*
 CREATE TABLE IF NOT EXISTS webpages (
@@ -120,21 +120,32 @@ impl DB {
     }
 
     pub async fn add_webpage(&self, title: String, url: String, blurb: String, content: String, number_js: i32) {
-        println!("Reached adding webpage {title}");
-        
+        debug!("Adding {url} to database...");
+
         match sqlx::query_as!(TCU, "SELECT title, url, content FROM webpages WHERE url = $1", url).fetch_one(&self.pool).await {
             Ok(res) => {
                 if res.title == title && 
                    res.content == content && 
                    res.url == url
-                   { return; }
+                   { info!("Already in database, skipping..."); return; }
+                else if res.url == url {
+                    debug!("Database entry stale, deleting...");
+                    self.drop_index(res.url).await;
+                }
             }
             Err(_) => {}
         };
 
         match sqlx::query!(r#"INSERT INTO webpages (title, url, blurb, content, number_js) VALUES ($1, $2, $3, $4, $5)"#, title, url, blurb, content, number_js).execute(&self.pool).await {
-            Ok(_) => {},
-            Err(_) => warn!("Couldn't set up database!")
+            Ok(_) => { info!("Added {title}, {url} to database successfully!"); },
+            Err(_) => warn!("Couldn't add to database!")
+        }
+    }
+
+    async fn drop_index(&self, url: String) {
+        match sqlx::query!("DELETE FROM webpages WHERE url = $1", url).execute(&self.pool).await {
+            Ok(_) => debug!("Deleted index {url}..."),
+            Err(_) => warn!("Couldn't delete index with {url}!")
         }
     }
 }
