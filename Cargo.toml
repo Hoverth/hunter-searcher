@@ -14,3 +14,4 @@ log = "0.4.21"
 sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-native-tls", "postgres" ] }
 axum = "0.7.5"
 serde = "1.0.202"
+clap = { version = "4.5.4", features = ["derive"] }
