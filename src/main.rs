@@ -1,7 +1,6 @@
 use log::{debug, info};
 
 mod crawler;
-mod lexer; 
 mod db;
 mod app;
 

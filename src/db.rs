@@ -1,7 +1,6 @@
 use serde::Serialize;
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
-use sqlx::types::JsonValue;
 use log::warn;
 
 /*
@@ -11,7 +10,6 @@ CREATE TABLE IF NOT EXISTS webpages (
     blurb TEXT,
     content TEXT NOT NULL,
     number_js INTEGER NOT NULL,
-    tf JSON,
     url TEXT NOT NULL,
     search_vector tsvector
 );
@@ -61,7 +59,6 @@ impl DB {
             blurb TEXT,
             content TEXT NOT NULL,
             number_js INTEGER NOT NULL,
-            tf JSON,
             url TEXT NOT NULL,
             search_vector tsvector
         );"#).execute(&pool).await {
@@ -122,7 +119,7 @@ impl DB {
         }
     }
 
-    pub async fn add_webpage(&self, title: String, url: String, blurb: String, content: String, number_js: i32, tf: String) {
+    pub async fn add_webpage(&self, title: String, url: String, blurb: String, content: String, number_js: i32) {
         println!("Reached adding webpage {title}");
         
         match sqlx::query_as!(TCU, "SELECT title, url, content FROM webpages WHERE url = $1", url).fetch_one(&self.pool).await {
@@ -135,7 +132,7 @@ impl DB {
             Err(_) => {}
         };
 
-        match sqlx::query!(r#"INSERT INTO webpages (title, url, blurb, content, number_js, tf) VALUES ($1, $2, $3, $4, $5, $6)"#, title, url, blurb, content, number_js, JsonValue::String(tf)).execute(&self.pool).await {
+        match sqlx::query!(r#"INSERT INTO webpages (title, url, blurb, content, number_js) VALUES ($1, $2, $3, $4, $5)"#, title, url, blurb, content, number_js).execute(&self.pool).await {
             Ok(_) => {},
             Err(_) => warn!("Couldn't set up database!")
         }

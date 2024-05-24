@@ -6,7 +6,6 @@ use std::time::Duration;
 use tokio::time::sleep;
 use log::{debug, info};
 
-use crate::lexer::Lexer;
 use crate::db::DB;
  
 /// Index Entry - A index entry format struct
@@ -20,11 +19,9 @@ pub struct IndexEntry {
     pub title: String,
     /// The links in the document
     pub links: Vec<String>, 
-    /// The term frequency table for the document
-    pub tf: HashMap<String, usize>, 
-    /// The text content of the document
+    /// The text content of the document (whitespace removed)
     pub content: String, 
-    /// A small blurb for the document
+    /// A small blurb for the document (the 10th-30th words)
     pub blurb: String, 
 }
 
@@ -117,7 +114,7 @@ impl Crawler {
             println!("Getting \"{:<60}\" ({:_>6} left, {:_>6} total sites)", latest_index.as_ref().expect("no latest index!").url, to_get_links.len(), self.websites.len());
 
             let i = latest_index.clone().unwrap();
-            db.add_webpage(i.title, i.url, String::from("blurb"), i.content, i.number_js.try_into().expect("Failed to convert!"), String::from("")).await;
+            db.add_webpage(i.title, i.url, i.blurb, i.content, i.number_js.try_into().expect("Failed to convert!")).await;
 
             self.index.push(latest_index.unwrap())
         }
@@ -167,24 +164,18 @@ impl Crawler {
                 }
             }
         }
+
+        let mut number_js = 0;
+        for _ in dom.query_selector("script").unwrap() {
+            number_js += 1;
+        }
+        let text: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
         debug!("{text}");
         
-        debug!("Generating TF table...");
-        let mut tf = HashMap::<String, usize>::new();
-
-        for token in Lexer::new(&text.chars().collect::<Vec<_>>()){
-            let term = token.iter().map(|x| x.to_ascii_uppercase()).collect::<String>();
-            if let Some(freq) = tf.get_mut(&term){
-                *freq += 1;
-            } else {
-                tf.insert(term, 1);
-            }
-        }
-
-        //TODO: do we bother with stopwords and lemmatisation?
-        
         let content: String = text.to_string(); // we should trim whitespace and extract blurb here
-        let blurb: String = String::new();
+        let blurb: String = content.split_whitespace()
+                                   .collect::<Vec<_>>()[10..30]
+                                   .join(" ");
 
         debug!("Collecting links...");
         for a in dom.query_selector("a[href]").unwrap(){
@@ -224,8 +215,7 @@ impl Crawler {
             url: url.to_string(), 
             links: page_urls, 
             title,
-            number_js: 0, 
-            tf,
+            number_js, 
             content,
             blurb,
         }
