@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   db:
     build: postgresql/
@@ -9,9 +7,8 @@ services:
       - postgres_data:/var/lib/postgresql/data 
     env_file:
         - ./.env
-  hunter-searcher:
+  hs:
     build: .
-    container_name: hunter-searcher
     ports:
       - "22002:22001"
     depends_on:

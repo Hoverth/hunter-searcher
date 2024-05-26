@@ -184,7 +184,7 @@ impl Crawler {
         let content: String = text.to_string(); // we should trim whitespace and extract blurb here
     
         // not ideal TODO: make this better
-        let mut blurb: String = String::new();
+        let blurb: String;
         if words.len() < 30 { blurb = words[5..].join(" "); }
         else { blurb = words[10..30].join(" "); }
 

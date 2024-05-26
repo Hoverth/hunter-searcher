@@ -4,4 +4,4 @@ WORKDIR /usr/src/hunter-searcher
 COPY . .
 RUN cargo install --path .
 
-CMD ["hunter-searcher"]
+CMD ["hunter-searcher", "serve"]

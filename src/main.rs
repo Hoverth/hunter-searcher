@@ -28,7 +28,6 @@ async fn main() {
     env_logger::init();
 
     let args = Args::parse();
-    println!("{args:?}");
     
     let db = DB::new(
         &env::var("POSTGRES_USER").expect("No POSTGRES_USER env var set!"), 
