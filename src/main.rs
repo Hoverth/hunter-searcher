@@ -21,6 +21,12 @@ struct Args {
 
     #[arg(long,short,default_value_t=1,help="the max amount of pages to crawl (set to -1 to infinitely crawl)")]
     depth: i32,
+
+    #[arg(long,short,default_value_t=String::new(),help="Optional - the patterns to whitelist the crawler to (comma-seperated)")]
+    whitelist: String,
+
+    #[arg(long,short,default_value_t=String::new(),help="Optional - the patterns to blacklist the crawler to (comma-seperated)")]
+    blacklist: String,
 }
 
 #[tokio::main]
@@ -43,9 +49,19 @@ async fn main() {
         if !url.starts_with("http") { url = "http://".to_owned() + &url }
         info!("Started crawler!");
         
-        let mut crawler = CrawlerBuilder::new("hunter-searcher crawler/v0.1.0")
-                                        .max_depth(args.depth)
-                                        .build();
+        let mut crawler_builder = CrawlerBuilder::new("hunter-searcher crawler/v0.1.0")
+                                        .max_depth(args.depth);
+        if args.whitelist != String::new() {
+            crawler_builder = crawler_builder.add_whitelist(
+                args.whitelist.split(",").map(|s| s.to_string()).collect()
+            );
+        }
+        if args.blacklist != String::new() {
+            crawler_builder = crawler_builder.add_blacklist(
+                args.blacklist.split(",").map(|s| s.to_string()).collect()
+            );
+        }
+        let mut crawler = crawler_builder.build();
         
         debug!("Created Crawler from builder");
 

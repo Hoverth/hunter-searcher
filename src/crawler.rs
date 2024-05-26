@@ -4,7 +4,7 @@ use texting_robots::{Robot, get_robots_url};
 use std::collections::{HashMap, VecDeque};
 use std::time::Duration;
 use tokio::time::sleep;
-use log::{debug, info};
+use log::{debug, info, error};
 
 use crate::db::DB;
  
@@ -96,7 +96,7 @@ impl Crawler {
             }
             if self.whitelist_en {
                 for item in &self.whitelist {
-                    if !url_host.contains(item) { info!("Website in whitelist!"); skip = true }
+                    if !url_host.contains(item) { info!("Website not in whitelist!"); skip = true }
                 }
             }
             if skip { info!("Skipping..."); continue }
@@ -184,8 +184,9 @@ impl Crawler {
         let content: String = text.to_string(); // we should trim whitespace and extract blurb here
     
         // not ideal TODO: make this better
-        let blurb: String;
-        if words.len() < 30 { blurb = words[5..].join(" "); }
+        let mut blurb: String;
+        if words.len() <= 5 { blurb = words.join(" ") } 
+        else if words.len() < 30 && words.len() > 5 { blurb = words[5..].join(" "); }
         else { blurb = words[10..30].join(" "); }
 
         debug!("Collecting links...");
@@ -235,11 +236,13 @@ impl Crawler {
     /// Returns the body of a request as a string
     pub async fn request_body(&self, url: &str) -> Option<String> {
         let mut body: Option<String> = None;
-        let resp = self.client.execute(
+        let resp = match self.client.execute(
                 self.client.get(url).build().expect("failed to build request!")
             )
-            .await
-            .expect("request failed!");
+            .await {
+                Ok(r) => r,
+                Err(e) =>{ error!("Request failed to {url}: {e}"); return None; }
+            };
 
         if resp.status() == 200 {
             body = Some(resp.text().await.expect("error getting text"));
