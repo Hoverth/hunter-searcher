@@ -11,10 +11,12 @@ use std::collections::HashMap;
 
 use crate::db::{DB, SearchResult};
 
+/// State struct to hold the database for the axum server
 struct AppState {
     db: DB
 }
 
+/// Start the server with a DB connection
 pub async fn serve(db: DB) {
     info!("Starting server...");
     
@@ -34,11 +36,12 @@ pub async fn serve(db: DB) {
     axum::serve(listener, app).await.unwrap();
 }
 
+/// Returns the home page response
 async fn homepage() -> impl IntoResponse{
     (StatusCode::OK, [
             (header::CONTENT_TYPE, "text/html; charset=utf-8")
         ], 
-        String::from(r#"
+        String::from(r#"<!DOCTYPE html>
 <html>
     <head>
         <title>Hunter-Searcher</title>
@@ -56,9 +59,10 @@ async fn homepage() -> impl IntoResponse{
 "#))
 }
 
+/// Returns the search results response
 async fn search(State(state): State<Arc<AppState>>, extract::Query(query): extract::Query<HashMap<String, String>>) -> impl IntoResponse {
     
-    let mut default_page = String::from(r#"
+    let mut default_page = String::from(r#"<!DOCTYPE html>
 <html>
     <head>
         <title>Hunter-Searcher</title>
@@ -90,6 +94,7 @@ async fn search(State(state): State<Arc<AppState>>, extract::Query(query): extra
     (StatusCode::OK, [(header::CONTENT_TYPE, "text/html; charset=utf-8")], default_page)
 }
 
+/// API endpoint for search results
 async fn api_search(State(state): State<Arc<AppState>>, extract::Query(query): extract::Query<HashMap<String, String>>) -> Json<Vec<SearchResult>> {
     if query.contains_key("q") {
         Json(state.db.search(query.get("q").unwrap().as_str()).await.unwrap())
@@ -98,10 +103,12 @@ async fn api_search(State(state): State<Arc<AppState>>, extract::Query(query): e
     }
 }
 
+/// Simple ping response
 async fn pong() -> &'static str {
     "pong!"
 }
 
+/// Simple 404 response
 async fn handler_404() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "404: nothing to see here")
 }

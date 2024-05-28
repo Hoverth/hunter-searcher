@@ -29,6 +29,7 @@ ON webpages
 FOR EACH ROW EXECUTE PROCEDURE update_webpage_content();
 */
 
+/// Struct for storing a search result into memory from the database
 #[derive(Debug,Serialize)]
 pub struct SearchResult {
     pub title: String,
@@ -38,11 +39,14 @@ pub struct SearchResult {
     rank: Option<f32>,
 }
 
+/// Simple struct to hold the database connection pool
 pub struct DB {
     pool: Pool<Postgres>,
 }
 
 impl DB {
+    /// Connect to the database using a username, password, host (including port) and endpoint (or
+    /// database name)
     pub async fn new(un: &str, pw: &str, hs: &str, ep: &str) -> DB {
         let pool = PgPoolOptions::new()
                         .max_connections(5)
@@ -107,6 +111,7 @@ impl DB {
         }
     }
 
+    /// Execute a search on the database from a search term
     pub async fn search(&self, input: &str) -> Option<Vec<SearchResult>>{
         match sqlx::query_as!(SearchResult, r#" 
                 SELECT title, url, blurb, number_js, rank
@@ -119,6 +124,7 @@ impl DB {
         }
     }
 
+    /// Adds a webpage to the database
     pub async fn add_webpage(&self, title: String, url: String, blurb: String, content: String, number_js: i32) {
         debug!("Adding {url} to database...");
 
@@ -149,6 +155,9 @@ impl DB {
         }
     }
 }
+
+/// Small struct used in checking if pages are already present in the database before adding
+/// them
 struct TCU {
     title: String,
     content: String,
