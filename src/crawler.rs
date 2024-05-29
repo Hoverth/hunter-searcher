@@ -36,7 +36,7 @@ pub struct Crawler {
     robot_records: HashMap<String, String>,
     /// A vector containing the domains of the websites the crawler has scraped
     websites: Vec<String>,
-    /// The max amount of documents to get
+    /// The max amount of documents to get, decided in a first in, first out queue
     max_depth: i32,
     /// Whether the whitelist is enabled or not
     whitelist_en: bool,

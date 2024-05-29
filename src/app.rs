@@ -5,6 +5,7 @@ use axum::{
     http::{header, StatusCode},
     Json, Router,
 };
+use tower_http::compression::CompressionLayer;
 use log::info;
 use std::sync::Arc;
 use std::collections::HashMap;
@@ -27,6 +28,7 @@ pub async fn serve(db: DB) {
         .route("/ping", get(pong))
         .route("/search", get(search))
         .route("/api/search", get(api_search))
+        .layer(CompressionLayer::new())
         .fallback(handler_404)
         .with_state(shared_state);
 
