@@ -1,5 +1,6 @@
 use reqwest::{self, Client};
 use url::Url;
+use chrono::Utc;
 use texting_robots::{Robot, get_robots_url};
 use std::collections::{HashMap, VecDeque};
 use std::time::Duration;
@@ -54,13 +55,14 @@ pub struct Crawler {
     delay_time: Duration,
     /// The in-memory index of all the documents gotten this crawl
     index: Vec<IndexEntry>,
+    /// The time required for an entry to be considered stale, and replaced by the crawler
+    stale_time: i64
 }
 
 impl Crawler {
     /// Crawl from a seed URL
     pub async fn crawl(&mut self, db: &DB, seed_url: &str) -> Vec<IndexEntry> {
         let mut to_get_links: VecDeque<String> = VecDeque::new();
-        let mut latest_index;
         to_get_links.push_back(seed_url.to_string());
 
         debug!("Entering crawling loop...");
@@ -69,8 +71,15 @@ impl Crawler {
             if self.max_depth != -1 && self.index.len() >= self.max_depth.try_into().unwrap() { info!("Exiting loop as depth limit reached..."); break }
             
             let url = to_get_links.pop_front().expect("no urls!");
-            let url_host = Url::parse(&url).expect("can't unwrap url")
-                                    .host_str().unwrap().to_string();
+            let url_host = match Url::parse(&url) {
+                Ok(u) => {
+                    match u.host_str() {
+                        Some(h) => h.to_string(),
+                        None => { continue }
+                    }
+                },
+                Err(_) => { continue }
+            };
 
             info!("Starting on {url}...");
 
@@ -103,28 +112,40 @@ impl Crawler {
 
             Self::push_dedup(&mut self.websites, url_host);
             
-            latest_index = self.index_url(url.as_str()).await;
-        
-            for link in &latest_index.as_ref().expect("no latest index!").links {
-                if !to_get_links.contains(link) {
-                    to_get_links.push_back(link.to_string())
+            if let Some(latest_index) = self.index_url(db, url.as_str()).await{
+                for link in &latest_index.links {
+                    if !to_get_links.contains(link) {
+                        to_get_links.push_back(link.to_string())
+                    }
                 }
+
+                println!("Getting \"{:<60}\" ({:_>6} left, {:_>6} total sites)", latest_index.url, to_get_links.len(), self.websites.len());
+
+                let i = latest_index.clone();
+                db.add_webpage(i.title, i.url, i.blurb, i.content, i.number_js.try_into().expect("Failed to convert!"), true).await;
+
+                self.index.push(latest_index)
             }
-
-            println!("Getting \"{:<60}\" ({:_>6} left, {:_>6} total sites)", latest_index.as_ref().expect("no latest index!").url, to_get_links.len(), self.websites.len());
-
-            let i = latest_index.clone().unwrap();
-            db.add_webpage(i.title, i.url, i.blurb, i.content, i.number_js.try_into().expect("Failed to convert!")).await;
-
-            self.index.push(latest_index.unwrap())
         }
 
         self.index.clone()
     }
     
     /// Index a single URL
-    pub async fn index_url(&self, url: &str) -> Option<IndexEntry> {
+    pub async fn index_url(&self, db: &DB, url: &str) -> Option<IndexEntry> {
         info!("Indexing {url}...");
+
+        // TODO check in the DB if the url has been indexed lately, and skip if so
+        
+        let now = Utc::now().timestamp();
+        let then = match db.get_webpage(url.to_string()).await {
+            Some(i) => i.timestamp.timestamp(),
+            None => 0
+        };
+        let d = now-then;
+        debug!("Timestamps are: {now}, {then}, {d} vs {}", self.stale_time);
+        if then + self.stale_time >= now { info!("not allowed #####"); return None; }
+
         let resp = match self.request_body(url).await {
             Some(resp) => resp,
             None => { return None; }
@@ -152,15 +173,24 @@ impl Crawler {
                     }
 
                     if tag.contains("title") {
-                        title = child.inner_text(parser).to_string();
+                        let temp_title: Vec<char> = child.inner_text(parser).chars().collect();
+                        let n = if temp_title.len() > 50 {
+                            50
+                        } else {
+                            temp_title.len()
+                        };
+                        title = String::from_iter(temp_title[0..n].iter());
                     }
                 } else {
                     let img = child.get(parser).unwrap();
                     let text_portion = match img.as_tag() {
                         Some(imgtag) => { 
                             match imgtag.attributes().get("alt") {
-                                Some(text) => text.unwrap()
-                                                  .try_as_utf8_str().unwrap(),
+                                Some(text) => { match text {
+                                        Some(text) => text.try_as_utf8_str().unwrap(),
+                                        None => { continue }
+                                    }
+                                },
                                 None => { continue }
                             } 
                         },
@@ -215,6 +245,12 @@ impl Crawler {
             if let Some(query) = href.find('?') {
                 href.truncate(query);
             }
+
+            let mut skip = false;
+            for ext in [".png", ".gif", ".mp4", ".jpg", ".webp", ".ico", ".mov"] {
+                if href.ends_with(ext) { skip = true; break; }
+            }
+            if skip { continue; }
 
             if href.starts_with("http://") || href.starts_with("https://") {
                 Self::push_dedup(&mut page_urls, href)
@@ -291,6 +327,7 @@ impl CrawlerBuilder {
                 blacklist: Vec::new(),
                 delay_time: Duration::from_millis(1000),
                 index: Vec::new(),
+                stale_time: 60*60*24*4,
             }
         }
     }

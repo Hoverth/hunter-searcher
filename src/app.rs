@@ -82,6 +82,8 @@ async fn search(State(state): State<Arc<AppState>>, extract::Query(query): extra
 </html>"#);
     if query.contains_key("q") {
         default_page = default_page.replace("name=\"q\"", format!("name=\"q\" value=\"{}\"", &query.get("q").unwrap()).as_str());
+
+        //TODO check for bangs
         
         let mut search_items = String::new();
         for res in state.db.search(query.get("q").unwrap().as_str()).await.unwrap() {

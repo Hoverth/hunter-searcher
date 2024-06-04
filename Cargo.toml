@@ -11,8 +11,9 @@ url = "2.5.0"
 texting_robots = "0.2"
 env_logger = "0.11.3"
 log = "0.4.21"
-sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-native-tls", "postgres" ] }
+sqlx = { version = "0.7", features = ["runtime-tokio", "tls-native-tls", "postgres", "chrono"] }
 axum = "0.7.5"
 serde = "1.0.202"
 clap = { version = "4.5.4", features = ["derive"] }
 tower-http = { version = "0.5.2", features = ["compression-gzip"] }
+chrono = { version = "0.4.38", features = ["serde"] }

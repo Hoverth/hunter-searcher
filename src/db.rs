@@ -1,4 +1,5 @@
 use serde::Serialize;
+use sqlx::types::chrono::{self, Utc};
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
 use log::{warn, info, debug};
@@ -11,7 +12,8 @@ CREATE TABLE IF NOT EXISTS webpages (
     content TEXT NOT NULL,
     number_js INTEGER NOT NULL,
     url TEXT NOT NULL,
-    search_vector tsvector
+    search_vector tsvector,
+    timestamp timestamptz NOT NULL default now()
 );
 CREATE INDEX ix_search_vector ON webpages USING GIN (search_vector);
 CREATE OR REPLACE FUNCTION update_webpage_content() RETURNS trigger AS $$
@@ -37,6 +39,7 @@ pub struct SearchResult {
     pub blurb: Option<String>,
     number_js: i32,
     rank: Option<f32>,
+    pub timestamp: chrono::DateTime<Utc>,
 }
 
 /// Simple struct to hold the database connection pool
@@ -64,7 +67,8 @@ impl DB {
             content TEXT NOT NULL,
             number_js INTEGER NOT NULL,
             url TEXT NOT NULL,
-            search_vector tsvector
+            search_vector tsvector,
+            timestamp timestamptz NOT NULL default now()
         );"#).execute(&pool).await {
             Err(err) => println!("Failed on create table: {err:?}"),
             Ok(_) => {},
@@ -113,10 +117,13 @@ impl DB {
 
     /// Execute a search on the database from a search term
     pub async fn search(&self, input: &str) -> Option<Vec<SearchResult>>{
+
+        // TODO add other search parameters (-, site:, type:, etc)
+
         match sqlx::query_as!(SearchResult, r#" 
-                SELECT title, url, blurb, number_js, rank
-                FROM (select title, url, blurb, number_js, ts_rank(search_vector, websearch_to_tsquery($1)) as rank from webpages)
-                Where rank > 0.1
+                SELECT title, url, blurb, number_js, rank, timestamp
+                FROM (select title, url, blurb, number_js, ts_rank(search_vector, websearch_to_tsquery($1)) AS rank, timestamp FROM webpages)
+                WHERE rank > 0.1
                 ORDER BY rank DESC"#, input
                 ).fetch_all(&self.pool).await {
             Ok(results) => Some(results),
@@ -125,14 +132,15 @@ impl DB {
     }
 
     /// Adds a webpage to the database
-    pub async fn add_webpage(&self, title: String, url: String, blurb: String, content: String, number_js: i32) {
+    pub async fn add_webpage(&self, title: String, url: String, blurb: String, content: String, number_js: i32, ovrride: bool) {
         debug!("Adding {url} to database...");
 
         match sqlx::query_as!(TCU, "SELECT title, url, content FROM webpages WHERE url = $1", url).fetch_one(&self.pool).await {
             Ok(res) => {
                 if res.title == title && 
                    res.content == content && 
-                   res.url == url
+                   res.url == url &&
+                   !ovrride
                    { info!("Already in database, skipping..."); return; }
                 else if res.url == url {
                     debug!("Database entry stale, deleting...");
@@ -145,6 +153,18 @@ impl DB {
         match sqlx::query!(r#"INSERT INTO webpages (title, url, blurb, content, number_js) VALUES ($1, $2, $3, $4, $5)"#, title, url, blurb, content, number_js).execute(&self.pool).await {
             Ok(_) => { info!("Added {title}, {url} to database successfully!"); },
             Err(_) => warn!("Couldn't add to database!")
+        }
+    }
+
+    pub async fn get_webpage(&self, url: String) -> Option<SearchResult>{
+        debug!("Getting {url} from database...");
+
+        match sqlx::query_as!(SearchResult, r#" 
+                SELECT title, url, blurb, number_js, ts_rank(search_vector, websearch_to_tsquery($1)) AS rank, timestamp
+                FROM webpages
+                WHERE url = $1"# , url).fetch_one(&self.pool).await {
+            Ok(res) => Some(res),
+            Err(_) => None
         }
     }
 
