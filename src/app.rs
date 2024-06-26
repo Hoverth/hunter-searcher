@@ -43,43 +43,13 @@ async fn homepage() -> impl IntoResponse{
     (StatusCode::OK, [
             (header::CONTENT_TYPE, "text/html; charset=utf-8")
         ], 
-        String::from(r#"<!DOCTYPE html>
-<html>
-    <head>
-        <title>Hunter-Searcher</title>
-    </head>
-    <body>
-        <center>
-            <h1>Hunter-Searcher</h1>
-            <form action="/search">
-                <input type="text" name="q">
-                <input type="submit">
-            </form>
-        </center>
-    </body>
-</html>
-"#))
+        include_str!("html/index.html"))
 }
 
 /// Returns the search results response
 async fn search(State(state): State<Arc<AppState>>, extract::Query(query): extract::Query<HashMap<String, String>>) -> impl IntoResponse {
     
-    let mut default_page = String::from(r#"<!DOCTYPE html>
-<html>
-    <head>
-        <title>Hunter-Searcher</title>
-    </head>
-    <body>
-        <center>
-            <h1>Hunter-Searcher</h1>
-            <form action="/search">
-                <input type="text" name="q">
-                <input type="submit">
-            </form>
-        </center>
-        <!---->
-    </body>
-</html>"#);
+    let mut default_page: String = include_str!("html/main.html").to_string();
     if query.contains_key("q") {
         default_page = default_page.replace("name=\"q\"", format!("name=\"q\" value=\"{}\"", &query.get("q").unwrap()).as_str());
 
