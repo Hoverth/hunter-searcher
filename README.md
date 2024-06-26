@@ -6,7 +6,13 @@ Comes with a crawler. (so far, very in development at the moment)
 
 ## TODO
 
-- pass index over to a database of some kind
-- write a web interface
+- write a better web interface using `include_str!()` macro
+- about page(s) + footer with info
 
-Name inspired by Dune by Frank Herbert.
+## Wishlist
+
+- crawling local files (?)
+- maybe multi-threaded crawling?
+- 
+
+Name inspired from the little drones in Dune by Frank Herbert.
