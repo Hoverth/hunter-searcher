@@ -25,6 +25,7 @@ pub async fn serve(db: DB) {
 
     let app = Router::new()
         .route("/", get(homepage))
+        .route("/about", get(about))
         .route("/ping", get(pong))
         .route("/search", get(search))
         .route("/api/search", get(api_search))
@@ -43,13 +44,21 @@ async fn homepage() -> impl IntoResponse{
     (StatusCode::OK, [
             (header::CONTENT_TYPE, "text/html; charset=utf-8")
         ], 
-        include_str!("html/index.html"))
+        process_template(include_str!("html/index.html")))
+}
+
+/// Returns the about page reponse
+async fn about() -> impl IntoResponse{
+    (StatusCode::OK, [
+            (header::CONTENT_TYPE, "text/html; charset=utf-8")
+        ], 
+        process_template(include_str!("html/about.html")))
 }
 
 /// Returns the search results response
 async fn search(State(state): State<Arc<AppState>>, extract::Query(query): extract::Query<HashMap<String, String>>) -> impl IntoResponse {
     
-    let mut default_page: String = include_str!("html/main.html").to_string();
+    let mut default_page: String = process_template(include_str!("html/main.html"));
     if query.contains_key("q") {
         default_page = default_page.replace("name=\"q\"", format!("name=\"q\" value=\"{}\"", &query.get("q").unwrap()).as_str());
 
@@ -85,4 +94,10 @@ async fn pong() -> &'static str {
 /// Simple 404 response
 async fn handler_404() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "404: nothing to see here")
+}
+
+fn process_template(template: &str) -> String {
+    let template = template.to_string();
+    template.replace("<!--footer-->", include_str!("html/footer.html"))
+            .replace("/*style*/>",  include_str!("html/style.css"))
 }
